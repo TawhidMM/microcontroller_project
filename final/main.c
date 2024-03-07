@@ -81,15 +81,15 @@ ISR(USART_RXC_vect) {
 	
 	if(ath_status == GATE_OPEN){
 		PORTB |= (request);
+		PORTA = ath_status;
 		if(request == ENTER_REQUEST) {
-			PORTA = 1;
 			OCR1A = 300;  // 65, 180
 			gate_open = 1;
 			set_message(WELCOME_MSG);
 			// resetting debugging port
-			PORTA = 0;
 		}
-		else if(request == LEAVE_REQUEST){
+		else //if(request == LEAVE_REQUEST)
+		{
 			OCR1A = 300;  // 65, 180
 			gate_open = 1;
 			set_message(BYE_MSG);
@@ -120,8 +120,8 @@ ISR(INT0_vect) {
 	if(gate_open) {
 		OCR1A = 180;
 		gate_open = 0;
-		set_message(SWIP_MSG);
-		request = 0xF0;
+		set_message(DEFAULT_MSG);
+		//request = 0xF0;
 		recent_emptied = NONE;
 	}
 	else {
@@ -136,6 +136,9 @@ ISR(INT1_vect) {
 	if(!gate_open) {
 		
 		if(recent_emptied!=NONE) {
+			recent_emptied=NONE;
+			request = LEAVE_REQUEST;
+			
 			set_message("precessing bill ");
 			//show_message();
 			
@@ -147,14 +150,7 @@ ISR(INT1_vect) {
 			// send sms receive command
 			UART_send(RECEIVE_SMS);
 			// send the amount
-			UART_send(amount);
-			
-			// for debugging 
-			PORTA = amount;
-			
-			recent_emptied=NONE;
-			request = LEAVE_REQUEST;
-			
+			UART_send(amount);	
 		}
 		//set_message(SWIP_MSG);
 		//request = LEAVE_REQUEST;
@@ -164,7 +160,7 @@ ISR(INT1_vect) {
 		OCR1A = 180;
 		gate_open = 0;
 		set_message(DEFAULT_MSG);
-		request = 0xF0;
+		//request = 0xF0;
 		PORTA = 0;
 	}
 }

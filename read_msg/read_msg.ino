@@ -10,18 +10,16 @@
 
 #define SS_PIN 10
 #define RST_PIN 9
-#define GSM_RX 4
-#define GSM_TX 5
-#define ATMEGA_RX 2
-#define ATMEGA_TX 3
+#define GSM_RX 2
+#define GSM_TX 3
+#define ATMEGA_RX 6
+#define ATMEGA_TX 7
    
-
-
 #define RX 6    // Connect this to the TX pin of the other device
 #define TX 7    // Connect this to the RX pin of the other device
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instance.
-SoftwareSerial atmegaSerial(RX, TX);
+SoftwareSerial atmegaSerial(ATMEGA_RX, ATMEGA_TX);
 
 
 SoftwareSerial gsmSerial(GSM_RX, GSM_TX); 
@@ -42,14 +40,16 @@ void setup() {
 
 
 void loop() {
+    // gsmSerial.listen();
     // ReadUnreadMessages();
-    // delay(1000);
+    // delay(7000);
     read_RFID();
     read_atmega();
 }
 
 void read_atmega() {
-    //atmegaSerial.listen();
+    atmegaSerial.listen();
+
     if(atmegaSerial.available() > 0) {
         
         Serial.println("receiving command......");
@@ -66,6 +66,28 @@ void read_atmega() {
                 uint8_t to_be_paid = atmegaSerial.read();
                 Serial.print("amount : ");
                 Serial.println(to_be_paid);
+
+                gsmSerial.listen();
+                
+                String received_amount;
+                while(1){
+                    received_amount = ReadUnreadMessages();
+
+                    if(received_amount.length() >= 1){
+                        break;
+                    }
+                    delay(5000);
+                }
+
+                uint8_t paid = received_amount.toInt();
+                Serial.print("paid : ");
+                Serial.println(paid);
+
+                if(paid == to_be_paid){
+                    atmegaSerial.listen();
+                    atmegaSerial.write(GATE_OPEN);
+                    Serial.println("successful payment");
+                }
             }
         }
     }
@@ -73,52 +95,51 @@ void read_atmega() {
 }
 
 
-
-void ReadUnreadMessages() {
+String ReadUnreadMessages() {
+    //gsmSerial.listen();
     String receivedString = "";
     
-    //Serial.println("Setting the GSM in text mode");
-
     gsmSerial.println("AT+CMGF=1\r");
-    while (gsmSerial.available() > 0) {
-        //Serial.write(gsmSerial.read());
-        gsmSerial.read();
-    }
-    delay(2000);
+    // while (gsmSerial.available() > 0) {
+    //     Serial.write(gsmSerial.read());
+    //     //gsmSerial.read();
+    // }
+    delay(500);
+
 
     //Serial.println("Fetching list of received unread SMS!");
     gsmSerial.println("AT+CMGL=\"REC UNREAD\"\r");
     while (gsmSerial.available() > 0) {
+        char c = gsmSerial.read();
         //Serial.write(gsmSerial.read());
-        gsmSerial.read();
+        receivedString += c;
     }
+    delay(500);
 
-    delay(2000);
-    // Print the response on the Serial Monitor
-    while (gsmSerial.available() > 0) {
-        char a= gsmSerial.read();
-        //Serial.write(gsmSerial.read());
-        receivedString += a;
-    }
+    //Serial.println("received sms ...................");
     Serial.println(receivedString);
     //Serial.println(receivedString.length());
-    unsigned int a=0;
-    String tk="";
+    unsigned int a = 0;
+    String tk = "";
+     
     for(;a<receivedString.length();a++){
         if(receivedString[a]=='T'){
-        a++;
-        if(receivedString[a]=='k'){
             a++;
-            while(receivedString[a]!='f'){
-            tk+=receivedString[a];
-            a++;
+            if(receivedString[a]=='k'){
+                a++;
+                while(receivedString[a]!='f'){
+                    tk+=receivedString[a];
+                    a++;
+                }
+                break;
             }
-            break;
-        }
         }
     }
 
+    Serial.print("received tk : ");
     Serial.println(tk);
+
+    return tk;
 }
 
 
