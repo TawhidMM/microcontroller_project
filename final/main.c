@@ -86,6 +86,8 @@ ISR(USART_RXC_vect) {
 			OCR1A = 300;  // 65, 180
 			gate_open = 1;
 			set_message(WELCOME_MSG);
+			// resetting debugging port
+			PORTA = 0;
 		}
 		else if(request == LEAVE_REQUEST){
 			OCR1A = 300;  // 65, 180
@@ -145,9 +147,10 @@ ISR(INT1_vect) {
 			// send sms receive command
 			UART_send(RECEIVE_SMS);
 			// send the amount
-			amount = 'T';
 			UART_send(amount);
-			PORTA = 1;
+			
+			// for debugging 
+			PORTA = amount;
 			
 			recent_emptied=NONE;
 			request = LEAVE_REQUEST;
@@ -284,8 +287,9 @@ void stop_timer0(){
 		slot_times[SLOT1] = timer0_count*0.065;
 		timer0_count = 0;
 		recent_emptied = SLOT1;
-		sprintf(buffer, "BILL: %d         ", slot_times[recent_emptied]);
 		amount = slot_times[SLOT1];
+		sprintf(buffer, "BILL: %d         ", amount);
+		
 		
 // 		UART_send(RECEIVE_SMS);
 // 		_delay_ms(500);
@@ -309,8 +313,9 @@ void stop_timer2(){
 		slot_times[SLOT2] = timer2_count*0.065;
 		timer2_count = 0;
 		recent_emptied = SLOT2;
-		sprintf(buffer, "BILL: %d         ", slot_times[recent_emptied]);
 		amount = slot_times[SLOT2];
+		sprintf(buffer, "BILL: %d         ", amount);
+		
 		
 // 		UART_send(RECEIVE_SMS);
 // 		_delay_ms(500);
