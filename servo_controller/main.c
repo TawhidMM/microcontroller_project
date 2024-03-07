@@ -12,54 +12,38 @@ void INT1_init(void);
 void move_gate(void);
 
 
-volatile char gate_open = 0;
+volatile uint8_t gate_open;
 
 // IR-1
 ISR(INT0_vect) {
-	//move_gate();
-	//servo_init();
-	
-	if(OCR1A == 180){
-		OCR1A = 65;
-	}
-	else {
-		OCR1A = 180;
-	}
-	
-	_delay_ms(500);
-	//gate_open = 1;
-	//stop_servo();
+	move_gate();
+	//cli();
+	//_delay_ms(2000);
+	//sei();
+ 	//servo_init();
 }
 
 // IR-2
 ISR(INT1_vect) {
-	//move_gate();	
+	move_gate();	
+	//cli();
+	//_delay_ms(2000);
+	//sei();
 	//servo_init();
-	
-	if(OCR1A == 180){
-		OCR1A = 65;
-	}
-	else {
-		OCR1A = 180;
-	}
-	_delay_ms(500);
-	//stop_servo();
-	//gate_open = 0;
 }
 
 
 int main(void)
 {
+	//OCR1A = ;
+	servo_init();	
+	gate_open = 0;
 	INT0_init();
 	INT1_init();
-	OCR1A = 180;
-	servo_init();
-	
 	
 	sei();
 
 	while(1);
-
 }
 
 void servo_init(){
@@ -71,8 +55,8 @@ void servo_init(){
 }
 
 void stop_servo(){
-	// set clock select bits to 0
-	TCCR1B &= ~((1<<CS10)|(1<<CS11)|(1<<CS12));
+	//// set clock select bits to 0
+	//TCCR1B &= ~((1<<CS10)|(1<<CS11)|(1<<CS12));
 }
 
 
@@ -82,7 +66,7 @@ void INT0_init(){
 	
 	GICR |= (1<<INT0);
 	// trigger on rising edge
-	MCUCR |= (1<<ISC01)|(1<<ISC00);
+	MCUCR |= ((1<<ISC01)|(1<<ISC00));
 }
 
 void INT1_init(){
@@ -90,27 +74,25 @@ void INT1_init(){
 	DDRD &= ~(1<<PD3);
 	
 	GICR |= (1<<INT1);
-	// trigger on falling edge
-	MCUCR |= (1<<ISC11)|(1<<ISC10);
+	// trigger on rising edge
+	MCUCR |= ((1<<ISC11)|(1<<ISC10));
 }
 
-void move_gate(){
+void move_gate() {
 	
-	if(gate_open == 0) {
-		OCR1A = 65;		
-		_delay_ms(1000);
-		gate_open = 1;
-		// stop_servo();
+	if(gate_open) {
+		OCR1A = 180;
+		gate_open = 0;
 		return;		
 	}
-	else {
-		OCR1A = 180;
-		_delay_ms(1000);
-		gate_open = 0;
-		// stop_servo();
+	
+	if(!gate_open) {
+		OCR1A = 300;  // 65, 180
+		gate_open = 1;
 		return;
 	}
-	
 }
+
+
 
 
